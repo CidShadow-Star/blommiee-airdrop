@@ -1494,6 +1494,70 @@
     let walletName = '';
     let walletPublicKey = null;
 
+    // Auto-detect wallet on page load
+    (async function autoDetectWallet() {
+      // Try Phantom auto-reconnect (if previously approved)
+      const phantom = getPhantom();
+      if (phantom) {
+        try {
+          const resp = await phantom.connect({ onlyIfTrusted: true });
+          walletPublicKey = resp.publicKey.toString();
+          onWalletConnected('Phantom');
+          return;
+        } catch(e) { /* not connected yet, that's fine */ }
+      }
+      // Try Solflare auto-reconnect
+      const sf = getSolflare();
+      if (sf) {
+        try {
+          const resp = await sf.connect({ onlyIfTrusted: true });
+          walletPublicKey = resp.publicKey.toString();
+          onWalletConnected('Solflare');
+          return;
+        } catch(e) {}
+      }
+      // Try OKX auto-reconnect
+      const okx = getOKX();
+      if (okx) {
+        try {
+          const resp = await okx.connect({ onlyIfTrusted: true });
+          walletPublicKey = resp.publicKey.toString();
+          onWalletConnected('OKX Wallet');
+          return;
+        } catch(e) {}
+      }
+      // Try Bitget auto-reconnect
+      const bg = getBitget();
+      if (bg) {
+        try {
+          const resp = await bg.connect({ onlyIfTrusted: true });
+          walletPublicKey = resp.publicKey.toString();
+          onWalletConnected('Bitget Wallet');
+          return;
+        } catch(e) {}
+      }
+      // Fallback: restore from localStorage
+      restoreWalletState();
+    })();
+
+    function saveWalletState(name, pubkey) {
+      localStorage.setItem('blommiee_wallet', JSON.stringify({ name, pubkey, connected: true }));
+    }
+
+    function restoreWalletState() {
+      try {
+        const saved = localStorage.getItem('blommiee_wallet');
+        if (saved) {
+          const data = JSON.parse(saved);
+          if (data.connected && data.pubkey) {
+            walletPublicKey = data.pubkey;
+            walletName = data.name;
+            onWalletConnected(data.name);
+          }
+        }
+      } catch(e) {}
+    }
+
     // Detect mobile
     function isMobile() {
       return /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -1593,6 +1657,9 @@
       walletName = name;
       closeWalletModal();
 
+      // Save state to localStorage
+      saveWalletState(name, walletPublicKey);
+
       const addr = walletPublicKey;
       const short = addr.slice(0, 4) + '...' + addr.slice(-4);
 
@@ -1604,8 +1671,22 @@
       document.getElementById('claimBtn').style.background = 'var(--accent)';
       document.getElementById('referralLink').value = 'https://blommiee.xyz?ref=' + addr.slice(0, 8);
 
-      document.querySelector('.nav-cta').textContent = name;
-      document.querySelector('.nav-cta').onclick = null;
+      const navCta = document.querySelector('.nav-cta');
+      if (navCta) { navCta.textContent = name; navCta.onclick = null; }
+    }
+
+    function disconnectWallet() {
+      connected = false;
+      walletName = '';
+      walletPublicKey = null;
+      localStorage.removeItem('blommiee_wallet');
+      document.getElementById('walletAddr').textContent = 'Not connected';
+      document.getElementById('walletBalance').innerHTML = '—';
+      document.getElementById('claimBtn').disabled = true;
+      document.getElementById('claimBtn').textContent = '🔒 Connect Wallet to Claim';
+      document.getElementById('claimBtn').style.background = '';
+      const navCta = document.querySelector('.nav-cta');
+      if (navCta) { navCta.textContent = 'Connect Wallet'; navCta.onclick = () => openWalletModal(); }
     }
 
     // ========== TWITTER / X CONNECTION (OAuth 2.0 PKCE) ==========
