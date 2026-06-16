@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json());
 
 const CONFIG = {
-  clientId: process.env.X_CLIENT_ID || 'REPLACE_WITH_YOUR_TWITTER_CLIENT_ID',
+  clientId: process.env.X_CLIENT_ID || 'NU40U1djeVhlQXFJd0pTZTJyLXQ6MTpjaQ',
   clientSecret: process.env.X_CLIENT_SECRET || 'REPLACE_WITH_YOUR_TWITTER_CLIENT_SECRET',
   redirectUri: 'https://cidshadow-star.github.io/blommiee-airdrop/',
   blommieeTwitterId: process.env.BLOMMIEE_TWITTER_ID || 'REPLACE_WITH_TWITTER_USER_ID',
