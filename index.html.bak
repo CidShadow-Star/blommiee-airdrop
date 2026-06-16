@@ -30,8 +30,8 @@
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
+
     html { scroll-behavior: smooth; }
-    button, a, .wallet-option, .task-btn, .copy-btn { touch-action: manipulation; -webkit-tap-highlight-color: rgba(217,70,239,0.3); }
 
     body {
       font-family: var(--font);
@@ -1526,7 +1526,7 @@
     setInterval(updateCountdown, 1000);
 
     // ========== WALLET CONNECTION ==========
-    const SITE_URL = 'https://cidshadow-star.github.io/blommiee-airdrop/';
+    const SITE_URL = 'https://blommiee-airdrop.netlify.app';
     let connected = false;
     let walletName = '';
     let walletPublicKey = null;
@@ -1661,11 +1661,7 @@
           break;
       }
 
-      if (url) {
-        // Use window.open for Telegram in-app browser compatibility
-        window.open(url, '_blank');
-        setTimeout(() => { window.location.href = url; }, 500);
-      }
+      if (url) window.location.href = url;
     }
 
     // ========== SHARED: After connection ==========
@@ -1721,7 +1717,6 @@
 
     // Check for OAuth callback
     (function checkXCallback() {
-      try {
       const params = new URLSearchParams(window.location.search);
       const code = params.get('code');
       const state = params.get('state');
@@ -1741,23 +1736,16 @@
         showXConnected(data.name, data.username, data.avatar);
         verifyXFollow();
       }
-      } catch(e) { console.error('X callback error:', e); }
     })();
 
     async function connectX() {
-      const btn = document.getElementById('connectXBtn');
-      if (btn) { btn.textContent = '⏳ Redirecting to X...'; btn.disabled = true; }
-
       const codeVerifier = generateRandomString(64);
       localStorage.setItem('x_code_verifier', codeVerifier);
       const codeChallenge = base64urlencode(await sha256(codeVerifier));
 
       const authUrl = `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${X_CLIENT_ID}&redirect_uri=${encodeURIComponent(X_REDIRECT_URI)}&scope=${encodeURIComponent(X_SCOPES)}&state=blommiee_x_auth&code_challenge=${codeChallenge}&code_challenge_method=S256`;
 
-      // Use window.open for Telegram in-app browser compatibility
-      window.open(authUrl, '_blank');
-      // Fallback: also try location.href after a delay
-      setTimeout(() => { window.location.href = authUrl; }, 500);
+      window.location.href = authUrl;
     }
 
     async function exchangeXCode(code) {
