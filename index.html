@@ -1422,74 +1422,37 @@
       <h3>Connect Wallet</h3>
       <p id="walletModalDesc">Choose your Solana wallet to connect</p>
 
-      <!-- MOBILE: Deep link options -->
-      <div class="wallet-options" id="mobileWallets" style="display:none;">
-        <div class="wallet-option" onclick="connectMobile('phantom')">
-          <div class="wo-icon" style="background:linear-gradient(135deg,#ab9ff2,#7c3aed)">👻</div>
-          <div>
-            <div class="wo-name">Phantom</div>
-            <div class="wo-desc">Open in Phantom browser</div>
-            <div class="wo-status" style="font-size:11px;margin-top:2px;color:var(--accent-light);">Tap to open →</div>
-          </div>
-        </div>
-        <div class="wallet-option" onclick="connectMobile('okx')">
-          <div class="wo-icon" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8)">🔵</div>
-          <div>
-            <div class="wo-name">OKX Wallet</div>
-            <div class="wo-desc">Open in OKX browser</div>
-            <div class="wo-status" style="font-size:11px;margin-top:2px;color:var(--accent-light);">Tap to open →</div>
-          </div>
-        </div>
-        <div class="wallet-option" onclick="connectMobile('bitget')">
-          <div class="wo-icon" style="background:linear-gradient(135deg,#22c55e,#16a34a)">🟢</div>
-          <div>
-            <div class="wo-name">Bitget Wallet</div>
-            <div class="wo-desc">Open in Bitget browser</div>
-            <div class="wo-status" style="font-size:11px;margin-top:2px;color:var(--accent-light);">Tap to open →</div>
-          </div>
-        </div>
-        <div class="wallet-option" onclick="connectMobile('solflare')">
-          <div class="wo-icon" style="background:linear-gradient(135deg,#f59e0b,#d97706)">☀️</div>
-          <div>
-            <div class="wo-name">Solflare</div>
-            <div class="wo-desc">Open in Solflare browser</div>
-            <div class="wo-status" style="font-size:11px;margin-top:2px;color:var(--accent-light);">Tap to open →</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- DESKTOP: Extension detect options -->
-      <div class="wallet-options" id="desktopWallets">
-        <div class="wallet-option" data-wallet="phantom" onclick="connectWallet('Phantom')">
+      <div class="wallet-options" id="walletList">
+        <div class="wallet-option" onclick="smartConnect('phantom')">
           <div class="wo-icon" style="background:linear-gradient(135deg,#ab9ff2,#7c3aed)">👻</div>
           <div>
             <div class="wo-name">Phantom</div>
             <div class="wo-desc">Most popular Solana wallet</div>
-            <div class="wo-status" style="font-size:11px;margin-top:2px;">Detecting...</div>
+            <div class="wo-status" id="status-phantom">Tap to connect →</div>
           </div>
         </div>
-        <div class="wallet-option" data-wallet="okx" onclick="connectWallet('OKX Wallet')">
+        <div class="wallet-option" onclick="smartConnect('okx')">
           <div class="wo-icon" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8)">🔵</div>
           <div>
             <div class="wo-name">OKX Wallet</div>
             <div class="wo-desc">Multi-chain wallet</div>
-            <div class="wo-status" style="font-size:11px;margin-top:2px;">Detecting...</div>
+            <div class="wo-status" id="status-okx">Tap to connect →</div>
           </div>
         </div>
-        <div class="wallet-option" data-wallet="bitget" onclick="connectWallet('Bitget Wallet')">
+        <div class="wallet-option" onclick="smartConnect('bitget')">
           <div class="wo-icon" style="background:linear-gradient(135deg,#22c55e,#16a34a)">🟢</div>
           <div>
             <div class="wo-name">Bitget Wallet</div>
             <div class="wo-desc">Trade & earn</div>
-            <div class="wo-status" style="font-size:11px;margin-top:2px;">Detecting...</div>
+            <div class="wo-status" id="status-bitget">Tap to connect →</div>
           </div>
         </div>
-        <div class="wallet-option" data-wallet="solflare" onclick="connectWallet('Solflare')">
+        <div class="wallet-option" onclick="smartConnect('solflare')">
           <div class="wo-icon" style="background:linear-gradient(135deg,#f59e0b,#d97706)">☀️</div>
           <div>
             <div class="wo-name">Solflare</div>
             <div class="wo-desc">Solana native wallet</div>
-            <div class="wo-status" style="font-size:11px;margin-top:2px;">Detecting...</div>
+            <div class="wo-status" id="status-solflare">Tap to connect →</div>
           </div>
         </div>
       </div>
@@ -1543,129 +1506,85 @@
     function getBitget() { return window.bitgetSolana || window.bitget?.solana; }
 
     function openWalletModal() {
-      if (isMobile()) {
-        // Mobile: show deep link options directly
-        showMobileWalletOptions();
-      } else {
-        // Desktop: detect extensions
-        showDesktopWalletOptions();
-      }
+      // Detect extensions on desktop and show status
+      detectWallets();
       document.getElementById('walletModal').classList.add('show');
     }
 
-    function showMobileWalletOptions() {
-      document.getElementById('desktopWallets').style.display = 'none';
-      document.getElementById('mobileWallets').style.display = 'flex';
-    }
-
-    function showDesktopWalletOptions() {
-      document.getElementById('desktopWallets').style.display = 'flex';
-      document.getElementById('mobileWallets').style.display = 'none';
-
-      const phantom = getPhantom();
-      const solflare = getSolflare();
-      const okx = getOKX();
-      const bitget = getBitget();
-
-      document.querySelectorAll('#desktopWallets .wallet-option').forEach(opt => {
-        const name = opt.getAttribute('data-wallet');
-        let installed = false;
-        if (name === 'phantom') installed = !!phantom;
-        else if (name === 'solflare') installed = !!solflare;
-        else if (name === 'okx') installed = !!okx;
-        else if (name === 'bitget') installed = !!bitget;
-
-        const statusEl = opt.querySelector('.wo-status');
-        if (installed) {
-          statusEl.textContent = '✓ Detected';
-          statusEl.style.color = 'var(--green)';
-        } else {
-          statusEl.textContent = 'Install extension →';
-          statusEl.style.color = 'var(--text-muted)';
+    function detectWallets() {
+      const extMap = {
+        phantom: getPhantom(),
+        solflare: getSolflare(),
+        okx: getOKX(),
+        bitget: getBitget()
+      };
+      for (const [name, ext] of Object.entries(extMap)) {
+        const el = document.getElementById('status-' + name);
+        if (el) {
+          if (ext) {
+            el.textContent = '✓ Detected — tap to connect';
+            el.style.color = 'var(--green)';
+          } else {
+            el.textContent = 'Tap to open wallet →';
+            el.style.color = 'var(--text-muted)';
+          }
         }
-      });
+      }
     }
 
     function closeWalletModal() {
       document.getElementById('walletModal').classList.remove('show');
     }
+    // ========== UNIFIED WALLET CONNECT ==========
+    // Try extension first → fallback to deep link (like TON Connect)
+    function smartConnect(wallet) {
+      const statusEl = document.getElementById('status-' + wallet);
+      if (statusEl) { statusEl.textContent = '⏳ Connecting...'; statusEl.style.color = 'var(--accent-light)'; }
 
-    // ========== DESKTOP: Extension connect ==========
-    function connectWallet(name) {
-      walletName = name;
-      if (name === 'Phantom') connectPhantomDesktop();
-      else if (name === 'Solflare') connectSolflareDesktop();
-      else if (name === 'OKX Wallet') connectOKXDesktop();
-      else if (name === 'Bitget Wallet') connectBitgetDesktop();
+      const extMap = {
+        phantom: { name: 'Phantom', ext: getPhantom(), deepLink: 'https://phantom.app/ul/browse/' },
+        solflare: { name: 'Solflare', ext: getSolflare(), deepLink: 'https://solflare.com/ul/browse/' },
+        okx: { name: 'OKX Wallet', ext: getOKX(), deepLink: 'https://www.okx.com/wc-deeplink?uri=' },
+        bitget: { name: 'Bitget Wallet', ext: getBitget(), deepLink: 'https://bitgetwallet.com/ul/browse/' }
+      };
+
+      const w = extMap[wallet];
+      if (!w) return;
+
+      // Desktop: try browser extension first
+      if (w.ext) {
+        connectViaExtension(wallet, w.ext, w.name);
+      } else {
+        // Mobile / no extension: deep link to wallet app
+        connectViaDeepLink(wallet, w.deepLink, w.name);
+      }
     }
 
-    async function connectPhantomDesktop() {
-      const phantom = getPhantom();
-      if (!phantom) { window.open('https://phantom.app/', '_blank'); return; }
+    async function connectViaExtension(wallet, ext, name) {
       try {
-        const resp = await phantom.connect();
+        const resp = await ext.connect();
         walletPublicKey = (resp.publicKey || resp.publicKey).toString();
-        onWalletConnected('Phantom');
-      } catch (e) { console.error('Phantom:', e); alert('Connection rejected or failed.'); }
+        onWalletConnected(name);
+      } catch (e) {
+        console.error(name + ':', e);
+        const statusEl = document.getElementById('status-' + wallet);
+        if (statusEl) { statusEl.textContent = '❌ Rejected — tap to retry'; statusEl.style.color = '#ef4444'; }
+      }
     }
 
-    async function connectSolflareDesktop() {
-      const sf = getSolflare();
-      if (!sf) { window.open('https://solflare.com/', '_blank'); return; }
-      try {
-        const resp = await sf.connect();
-        walletPublicKey = resp.publicKey.toString();
-        onWalletConnected('Solflare');
-      } catch (e) { console.error('Solflare:', e); alert('Connection rejected or failed.'); }
-    }
-
-    async function connectOKXDesktop() {
-      const okx = getOKX();
-      if (!okx) { window.open('https://www.okx.com/web3', '_blank'); return; }
-      try {
-        const resp = await okx.connect();
-        walletPublicKey = resp.publicKey.toString();
-        onWalletConnected('OKX Wallet');
-      } catch (e) { console.error('OKX:', e); alert('Connection rejected or failed.'); }
-    }
-
-    async function connectBitgetDesktop() {
-      const bg = getBitget();
-      if (!bg) { window.open('https://web3.bitget.com/', '_blank'); return; }
-      try {
-        const resp = await bg.connect();
-        walletPublicKey = resp.publicKey.toString();
-        onWalletConnected('Bitget Wallet');
-      } catch (e) { console.error('Bitget:', e); alert('Connection rejected or failed.'); }
-    }
-
-    // ========== MOBILE: Deep link connect ==========
-    function connectMobile(wallet) {
+    function connectViaDeepLink(wallet, baseUrl, name) {
       const encoded = encodeURIComponent(SITE_URL);
-      let url = '';
-
-      switch(wallet) {
-        case 'phantom':
-          // Open URL inside Phantom's in-app browser
-          url = 'https://phantom.app/ul/browse/' + encoded;
-          break;
-        case 'solflare':
-          url = 'https://solflare.com/ul/browse/' + encoded;
-          break;
-        case 'okx':
-          // OKX deep link to open dApp browser
-          url = 'https://www.okx.com/wc-deeplink?uri=' + encoded;
-          break;
-        case 'bitget':
-          url = 'https://bitgetwallet.com/ul/browse/' + encoded;
-          break;
+      const url = baseUrl + encoded;
+      // Open wallet app via deep link
+      window.open(url, '_blank');
+      // Show instructions
+      const statusEl = document.getElementById('status-' + wallet);
+      if (statusEl) {
+        statusEl.innerHTML = '📱 Opening ' + name + '... Approve in wallet, then come back.';
+        statusEl.style.color = 'var(--accent-light)';
       }
-
-      if (url) {
-        // Use window.open for Telegram in-app browser compatibility
-        window.open(url, '_blank');
-        setTimeout(() => { window.location.href = url; }, 500);
-      }
+      // Fallback after 3s if window.open was blocked
+      setTimeout(() => { window.location.href = url; }, 2000);
     }
 
     // ========== SHARED: After connection ==========
