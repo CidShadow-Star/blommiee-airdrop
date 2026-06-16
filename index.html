@@ -1686,10 +1686,11 @@
     }
 
     // ========== TWITTER / X CONNECTION (OAuth 2.0 PKCE) ==========
-    const X_CLIENT_ID = 'REPLACE_WITH_YOUR_TWITTER_CLIENT_ID'; // From developer.twitter.com
+    const X_CLIENT_ID = 'REPLACE_WITH_YOUR_TWITTER_CLIENT_ID';
     const X_REDIRECT_URI = 'https://cidshadow-star.github.io/blommiee-airdrop/';
     const X_SCOPES = 'users.read follows.read tweet.read';
-    const BLOMMIEE_TWITTER_ID = 'REPLACE_WITH_TWITTER_USER_ID'; // Numeric ID of @Blommiee
+    const BLOMMIEE_TWITTER_ID = 'REPLACE_WITH_TWITTER_USER_ID';
+    const API_BASE = 'http://localhost:3456'; // Change to your backend URL in production // Numeric ID of @Blommiee
     let xAccessToken = null;
     let xUserId = null;
     let xUsername = null;
@@ -1748,16 +1749,33 @@
     }
 
     async function exchangeXCode(code) {
-      // NOTE: In production, this MUST be done server-side (Client Secret required)
-      // For demo: show instructions
-      const statusEl = document.getElementById('xStatus');
-      statusEl.textContent = 'Authorization received!';
-      statusEl.style.color = 'var(--green)';
-      statusEl.style.background = 'var(--green-glow)';
-
-      // Show demo connected state
-      showXConnected('Demo User', '@demo', '');
-      verifyXFollow();
+      const codeVerifier = localStorage.getItem('x_code_verifier');
+      try {
+        const resp = await fetch(`${API_BASE}/api/x/auth`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, code_verifier: codeVerifier }),
+        });
+        const data = await resp.json();
+        if (data.success) {
+          localStorage.setItem('blommiee_x_token', JSON.stringify({
+            token: 'authenticated',
+            userId: data.user.id,
+            username: data.user.username,
+            name: data.user.name,
+            avatar: data.user.avatar,
+          }));
+          xUserId = data.user.id;
+          xUsername = data.user.username;
+          showXConnected(data.user.name, data.user.username, data.user.avatar);
+          verifyXFollow();
+        } else {
+          alert('Twitter auth failed: ' + (data.error || 'Unknown error'));
+        }
+      } catch (err) {
+        alert('Backend connection failed. Make sure the backend is running.');
+        console.error(err);
+      }
     }
 
     function showXConnected(name, username, avatar) {
@@ -1800,27 +1818,31 @@
       const statusEl = document.getElementById('xFollowStatus');
       statusEl.style.display = 'block';
 
-      // In production: call Twitter API v2 GET /users/:id/following to verify
-      // For demo: simulate verification
       statusEl.innerHTML = '⏳ Checking if you follow @Blommiee...';
       statusEl.style.background = 'rgba(59,130,246,0.1)';
       statusEl.style.color = '#3b82f6';
 
-      setTimeout(() => {
-        // Simulated result (replace with real API check in production)
-        xFollowsBlommiee = true;
-        statusEl.innerHTML = '✅ <strong>You follow @Blommiee!</strong> Follow task auto-completed.';
-        statusEl.style.background = 'var(--green-glow)';
-        statusEl.style.color = 'var(--green)';
+      try {
+        const resp = await fetch(`${API_BASE}/api/x/verify-follow/${xUserId}`);
+        const data = await resp.json();
 
-        // Auto-complete follow task
-        const followBtn = document.querySelector('.task-item .task-btn');
-        if (followBtn && !followBtn.classList.contains('done')) {
-          followBtn.click();
+        if (data.success && data.follows) {
+          xFollowsBlommiee = true;
+          statusEl.innerHTML = '✅ <strong>You follow @Blommiee!</strong> Follow task auto-completed.';
+          statusEl.style.background = 'var(--green-glow)';
+          statusEl.style.color = 'var(--green)';
+          const followBtn = document.querySelector('.task-item .task-btn');
+          if (followBtn && !followBtn.classList.contains('done')) followBtn.click();
+        } else if (data.success && !data.follows) {
+          statusEl.innerHTML = '❌ <strong>You don\'t follow @Blommiee yet.</strong> <a href="https://x.com/Blommiee" target="_blank" style="color:var(--accent-light);">Follow now →</a>';
+          statusEl.style.background = 'rgba(239,68,68,0.1)';
+          statusEl.style.color = '#ef4444';
         }
-      }, 1500);
-    }
-
+      } catch (err) {
+        statusEl.innerHTML = '⚠️ Backend offline. <a href="https://x.com/Blommiee" target="_blank" style="color:var(--accent-light);">Follow manually →</a>';
+        statusEl.style.background = 'rgba(245,158,11,0.1)';
+        statusEl.style.color = '#f59e0b';
+      }
     // ========== TASK COMPLETION ==========
     let totalPts = 0;
 
